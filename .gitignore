@@ -1,0 +1,2 @@
+# 将被git忽略的文件
+node_modules/*

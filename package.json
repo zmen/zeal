@@ -25,6 +25,7 @@
   "homepage": "https://github.com/zmen/zeal#readme",
   "devDependencies": {
     "gulp": "^3.9.1",
-    "gulp-jasmine": "^2.4.0"
+    "gulp-jasmine": "^2.4.0",
+    "lodash": "^4.15.0"
   }
 }

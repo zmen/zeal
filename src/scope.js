@@ -17,18 +17,32 @@ Scope.prototype.$watch = function (watcherFn, listenerFn) {
     });
 };
 
-Scope.prototype.$digest = function () {
+Scope.prototype.$$digestOnce = function () {
     var self = this;
+    var newValue, oldValue, dirty;
     this.watchers.forEach(function (v) {
-        var newValue = v.watcherFn(self);
-        var oldValue = v.last;
+        newValue = v.watcherFn(self);
+        oldValue = v.last;
         if (newValue !== oldValue) {
             v.last = newValue;
             v.listenerFn(newValue, 
                         oldValue === initWatchVal? newValue: oldValue, 
                         self);
+            dirty = true;
         }
     });
-}
+    return dirty;
+};
+
+Scope.prototype.$digest = function () {
+    var dirty;
+    var ttl = 10;
+    do {
+        dirty = this.$$digestOnce();
+        if (dirty && !(ttl--)) {
+            throw "10 digest iterations reached";
+        }
+    } while (dirty) ;
+};
 
 module.exports.Scope = Scope;

@@ -5,7 +5,7 @@
 /* global require: false */
 /* global beforeEach: false */
 /* global jasmine: false */
-"use strict"; 
+"use strict";
 
 var _ = require('lodash');
 var Scope = require('../src/scope').Scope;
@@ -15,7 +15,7 @@ describe("Scope", function () {
     it("Can be constructed and used as an object", function () {
         var scope = new Scope();
         scope.aProperty = 1;
-        
+
         expect(scope.aProperty).toBe(1);
     });
 
@@ -38,7 +38,7 @@ describe("Scope", function () {
 
         it("calls the watch function with the scope as the argument", function () {
             var watchFn = jasmine.createSpy();
-            var listenerFn = function () {};
+            var listenerFn = function () { };
             scope.$watch(watchFn, listenerFn);
 
             scope.$digest();
@@ -142,7 +142,7 @@ describe("Scope", function () {
                 function (scope) { return scope.counterB; },
                 function (newValue, oldVaule, scope) {
                     scope.counterA++;
-                } 
+                }
             );
 
             expect((function () { scope.$digest(); })).toThrow();
@@ -151,13 +151,13 @@ describe("Scope", function () {
         it("ends the digest when last watch is clean", function () {
             scope.array = Array(100).fill(0);
             var watchExecutions = 0;
-            _.times(100, function(i) {
+            _.times(100, function (i) {
                 scope.$watch(
                     function (scope) {
                         watchExecutions++;
                         return scope.array[i];
                     },
-                    function (newValue, oldValue, scope) {}
+                    function (newValue, oldValue, scope) { }
                 );
             });
 
@@ -166,6 +166,64 @@ describe("Scope", function () {
             scope.array[0] = 420;
             scope.$digest();
             expect(watchExecutions).toBe(301);
+        });
+
+        it("does not end digest so that new watches are not run", function () {
+            scope.aValue = 'abc';
+            scope.counter = 0;
+
+            scope.$watch(
+                function (scope) { return scope.aValue; },
+                function (newValue, oldValue, scope) {
+                    scope.$watch(
+                        function (scope) { return scope.aValue; },
+                        function (newValue, oldValue, scope) {
+                            scope.counter++;
+                        }
+                    );
+                }
+            );
+
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+        });
+
+        it("compares based on value if enabled", function () {
+            scope.aValue = [1, 2, 3];
+            scope.counter = 0;
+
+            scope.$watch(
+                function (scope) { return scope.aValue; },
+                function (newValue, oldValue, scope) {
+                    scope.counter++;
+                },
+                true
+            );
+
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+
+            scope.aValue.push(4);
+            scope.$digest();
+            expect(scope.counter).toBe(2);
+        });
+
+        it("correctly handles NaNs", function () {
+            scope.number = 0/0;
+            scope.counter = 0;
+
+            scope.$watch(
+                function (scope) { return scope.number; },
+                function (newValue, oldVaue, scope) {
+                    scope.counter++;
+                }
+            );
+
+            scope.$digest();
+            expect(scope.counter).toBe(1);
+
+            scope.$digest();
+            expect(scope.counter).toBe(1);
         });
     });
 });

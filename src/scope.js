@@ -71,4 +71,12 @@ Scope.prototype.$eval = function (exp, arg) {
     return exp(this, arg);
 };
 
+Scope.prototype.$apply = function (exp) {
+    try {
+        return this.$eval(exp);
+    } finally {
+        this.$digest();
+    }
+};
+
 module.exports.Scope = Scope;

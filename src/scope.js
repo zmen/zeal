@@ -67,4 +67,8 @@ Scope.prototype.$digest = function () {
     } while (dirty) ;
 };
 
+Scope.prototype.$eval = function (exp, arg) {
+    return exp(this, arg);
+};
+
 module.exports.Scope = Scope;

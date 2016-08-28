@@ -10,11 +10,12 @@ function Scope() {
     this.$$asyncQueue = [];
     this.$$applyAsyncQueue = [];
     this.$$phase = null;
+    this.$$applyAsyncId = null;
 }
 
-function initWatchVal() {}
+function initWatchVal() { }
 
-function noop() {}
+function noop() { }
 
 Scope.prototype.$$areEqual = function (newValue, oldValue, valueEq) {
     if (valueEq) {
@@ -22,7 +23,7 @@ Scope.prototype.$$areEqual = function (newValue, oldValue, valueEq) {
     } else {
         return newValue === oldValue ||
             (typeof newValue === "number" && typeof oldValue === "number" &&
-            isNaN(newValue) && isNaN(oldValue));
+                isNaN(newValue) && isNaN(oldValue));
     }
 }
 
@@ -63,6 +64,12 @@ Scope.prototype.$digest = function () {
     var ttl = 10;
     this.$$lastDirtyWatch = null;
     this.$beginPhase("$digest");
+
+    if (this.$$applyAsyncId) {
+        clearTimeout(this.$$applyAsyncId);
+        this.$$flushApplyAsync();
+    }
+
     do {
         while (this.$$asyncQueue.length) {
             var asyncTask = this.$$asyncQueue.shift();
@@ -74,7 +81,7 @@ Scope.prototype.$digest = function () {
             this.$clearPhase();
             throw "10 digest iterations reached";
         }
-    } while (dirty || this.$$asyncQueue.length) ;
+    } while (dirty || this.$$asyncQueue.length);
     this.$clearPhase();
 };
 
@@ -123,13 +130,19 @@ Scope.prototype.$applyAsync = function (expr) {
     self.$$applyAsyncQueue.push(function () {
         self.$eval(expr);
     });
-    setTimeout(function () {
-        self.$apply(function () {
-            while (self.$$applyAsyncQueue.length) {
-                self.$$applyAsyncQueue.shift()();
-            }
-        });
-    }, 0);
+    if (self.$$applyAsyncId === null) {
+        self.$$applyAsyncId = setTimeout(function () {
+            self.$apply(_.bind(self.$$flushApplyAsync, self));
+        }, 0);
+    }
+
+};
+
+Scope.prototype.$$flushApplyAsync = function () {
+    while (this.$$applyAsyncQueue.length) {
+        this.$$applyAsyncQueue.shift()();
+    }
+    this.$$applyAsyncId = null;
 };
 
 module.exports.Scope = Scope;

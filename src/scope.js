@@ -231,4 +231,15 @@ Scope.prototype.$watchGroup = function (watchFns, listenerFn) {
     };
 }
 
+// Scope inheirence
+
+Scope.prototype.$new = function () {
+    //it's ok to just use Object.create(this)
+    //return Object.create(this);
+    var ChildScope = function () {};
+    ChildScope.prototype = this;
+    var child = new ChildScope();
+    return child;
+};
+
 module.exports.Scope = Scope;

@@ -1,6 +1,9 @@
 /* jshint globalstrict: true */
 /* global module: false */
 /* global require: false */
+/* global clearTimeout: false */
+/* global setTimeout: false */
+/* global console: false */
 "use strict";
 
 var _ = require("lodash");
@@ -51,28 +54,36 @@ Scope.prototype.$watch = function (watcherFn, listenerFn, valueEq) {
 };
 
 Scope.prototype.$$digestOnce = function () {
+
+    var dirty;
+    var continueLoop = true;
+
     var self = this;
-    var newValue, oldValue, dirty;
-    _.forEachRight(this.$$watchers, function (watcher) {
-        try {
-            if (watcher) {
-                newValue = watcher.watcherFn(self);
-                oldValue = watcher.last;
-                if (!self.$$areEqual(newValue, oldValue, watcher.valueEq)) {
-                    self.$$lastDirtyWatch = watcher;
-                    watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue);
-                    watcher.listenerFn(newValue,
-                        (oldValue === initWatchVal ? newValue : oldValue),
-                        self
-                    );
-                    dirty = true;
-                } else if (self.$$lastDirtyWatch == watcher) {
-                    return false;
+    this.$$everyScope(function (scope) {
+        var newValue, oldValue;
+        _.forEachRight(scope.$$watchers, function (watcher) {
+            try {
+                if (watcher) {
+                    newValue = watcher.watcherFn(scope);
+                    oldValue = watcher.last;
+                    if (!scope.$$areEqual(newValue, oldValue, watcher.valueEq)) {
+                        self.$$lastDirtyWatch = watcher;
+                        watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue);
+                        watcher.listenerFn(newValue,
+                            (oldValue === initWatchVal ? newValue : oldValue),
+                            scope
+                        );
+                        dirty = true;
+                    } else if (self.$$lastDirtyWatch == watcher) {
+                        continueLoop = false;
+                        return false;
+                    }
                 }
+            } catch (e) {
+                console.log(e);
             }
-        } catch (e) {
-            console.log(e);
-        }
+        });
+        return continueLoop;
     });
 
     return dirty;
@@ -204,12 +215,12 @@ Scope.prototype.$watchGroup = function (watchFns, listenerFn) {
 
     var changeReactionScheduled = false;
 
-    function watchGroupListener () {
+    function watchGroupListener() {
         if (firstRun) {
             firstRun = false;
             listenerFn(newValues, newValues, self);
         } else {
-            listenerFn (newValues, oldValues, self);
+            listenerFn(newValues, oldValues, self);
         }
         changeReactionScheduled = false;
     }
@@ -225,8 +236,8 @@ Scope.prototype.$watchGroup = function (watchFns, listenerFn) {
         });
     });
 
-    return function  () {
-        _.forEach(destroyFunctions, function  (destroyFunction) {
+    return function () {
+        _.forEach(destroyFunctions, function (destroyFunction) {
             destroyFunction();
         });
     };
@@ -237,13 +248,23 @@ Scope.prototype.$watchGroup = function (watchFns, listenerFn) {
 Scope.prototype.$new = function () {
     //it's ok to just use Object.create(this)
     //return Object.create(this);
-    var ChildScope = function () {};
+    var ChildScope = function () { };
     ChildScope.prototype = this;
     var child = new ChildScope();
     child.$$watchers = [];
     child.$$children = [];
     this.$$children.push(child);
     return child;
+};
+
+Scope.prototype.$$everyScope = function (fn) {
+    if (fn(this)) {
+        return this.$$children.every(function (child) {
+            return child.$$everyScope(fn);
+        });
+    } else {
+        return false;
+    }
 };
 
 module.exports.Scope = Scope;

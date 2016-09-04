@@ -13,6 +13,7 @@ function Scope() {
     this.$$phase = null;
     this.$$applyAsyncId = null;
     this.$$postDigestQueue = [];
+    this.$$children = [];
 }
 
 function initWatchVal() { }
@@ -240,6 +241,8 @@ Scope.prototype.$new = function () {
     ChildScope.prototype = this;
     var child = new ChildScope();
     child.$$watchers = [];
+    child.$$children = [];
+    this.$$children.push(child);
     return child;
 };
 

@@ -246,16 +246,17 @@ Scope.prototype.$watchGroup = function (watchFns, listenerFn) {
 
 // Scope inheirence
 
-Scope.prototype.$new = function (isolated) {
+Scope.prototype.$new = function (isolated, parent) {
     //it's ok to just use Object.create(this)
     //return Object.create(this);
     var child;
+    parent = parent || this;
     if (isolated) {
         child = new Scope();
-        child.$root = this.$root;
-        child.$$asyncQueue = this.$$asyncQueue;
-        child.$$postDigestQueue = this.$$postDigestQueue;
-        child.$$applyAsyncQueue = this.$$applyAsyncQueue;
+        child.$root = parent.$root;
+        child.$$asyncQueue = parent.$$asyncQueue;
+        child.$$postDigestQueue = parent.$$postDigestQueue;
+        child.$$applyAsyncQueue = parent.$$applyAsyncQueue;
     } else {
         var ChildScope = function () { };
         ChildScope.prototype = this;
@@ -263,7 +264,8 @@ Scope.prototype.$new = function (isolated) {
     }
     child.$$watchers = [];
     child.$$children = [];
-    this.$$children.push(child);
+    child.$parent = parent;
+    parent.$$children.push(child);
     return child;
 };
 
@@ -275,6 +277,17 @@ Scope.prototype.$$everyScope = function (fn) {
     } else {
         return false;
     }
+};
+
+Scope.prototype.$destroy = function () {
+    if (this.$parent) {
+        var siblings = this.$$children;
+        var indexOfThis = siblings.indexOf(this);
+        if (indexOfThis >= 0) {
+            siblings.splice(indexOfThis, 1);
+        }
+    }
+    this.$$watchers = null;
 };
 
 module.exports.Scope = Scope;

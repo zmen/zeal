@@ -1170,7 +1170,7 @@ describe("Scope", function () {
             }, 50);
         });
 
-        it("executes $postDigest functions on isolated scopes", function () {
+        it('executes $postDigest functions on isolated scopes', function () {
             var parent = new Scope();
             var child = parent.$new(true);
 
@@ -1181,6 +1181,53 @@ describe("Scope", function () {
             parent.$digest();
 
             expect(child.didPostDigest).toBe(true);
-        })
+        });
+
+        it('can take some other scope as the parent', function () {
+            var prototypeParent = new Scope();
+            var hierarchyParent = new Scope();
+            var child = prototypeParent.$new(false, hierarchyParent);
+
+            prototypeParent.aValue = 42;
+            expect(child.aValue).toBe(42);
+
+            child.counter = 0;
+            child.$watch(function (scope) {
+                scope.counter++;
+            });
+
+            prototypeParent.$digest();
+            expect(child.counter).toBe(0);
+
+            hierarchyParent.$digest();
+            expect(child.counter).toBe(2);
+        });
+
+        it('is no longer digested when $destroy has been called', function () {
+            var parent = new Scope();
+            var child = parent.$new();
+
+            child.aValue = [1, 2, 3];
+            child.counter = 0;
+            child.$watch(
+                function (scope) { return scope.aValue; },
+                function (newValue, oldValue, scope) {
+                    scope.counter++;
+                },
+                true
+            );
+
+            parent.$digest();
+            expect(child.counter).toBe(1);
+
+            child.aValue.push(4);
+            parent.$digest();
+            expect(child.counter).toBe(2);
+
+            child.$destroy();
+            child.aValue.push(5);
+            parent.$digest();
+            expect(child.counter).toBe(2);
+        });
     });
 });

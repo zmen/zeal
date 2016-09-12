@@ -7,6 +7,7 @@
 "use strict";
 
 var _ = require("lodash");
+require("../src/angular");
 
 function Scope() {
     this.$$watchers = [];

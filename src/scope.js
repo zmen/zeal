@@ -19,6 +19,7 @@ function Scope() {
     this.$$postDigestQueue = [];
     this.$$children = [];
     this.$root = this;
+    this.$$listeners = {};
 }
 
 function initWatchVal() { }
@@ -243,7 +244,7 @@ Scope.prototype.$watchGroup = function (watchFns, listenerFn) {
             destroyFunction();
         });
     };
-}
+};
 
 // Scope inheirence
 
@@ -265,6 +266,7 @@ Scope.prototype.$new = function (isolated, parent) {
     }
     child.$$watchers = [];
     child.$$children = [];
+    child.$$listeners = {};
     child.$parent = parent;
     parent.$$children.push(child);
     return child;
@@ -383,6 +385,16 @@ Scope.prototype.$watchCollection = function (watchFn, listenerFn) {
     };
 
     return this.$watch(internalWatchFn, internalListenerFn);
+};
+
+// Event system
+
+Scope.prototype.$on = function (evt, fn) {
+    if(!this.$$listeners[evt]) {
+        this.$$listeners[evt] = [fn];
+    } else {
+        this.$$listeners[evt].push(fn);
+    }
 };
 
 module.exports.Scope = Scope;

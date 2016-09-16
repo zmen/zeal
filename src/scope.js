@@ -397,19 +397,25 @@ Scope.prototype.$on = function (evt, fn) {
     }
 };
 
-Scope.prototype.$$fireEventOnScope = function (eventName) {
+Scope.prototype.$$fireEventOnScope = function (eventName, additionalArgs) {
+    var event = {name: eventName};
+    var listenerArgs = [event].concat(additionalArgs)
     var listeners = this.$$listeners[eventName] || [];
+   
     _.forEach(listeners, function (listener) {
-        listener();
+        listener.apply(null, listenerArgs);
     });
+    return event;
 };
 
 Scope.prototype.$emit = function (eventName) {
-    this.$$fireEventOnScope(eventName);
+    var additionalArgs = Array.prototype.slice.call(arguments, 1);
+    return this.$$fireEventOnScope(eventName, additionalArgs);
 };
 
 Scope.prototype.$broadcast = function (eventName) {
-    this.$$fireEventOnScope(eventName);
-}
+     var additionalArgs = Array.prototype.slice.call(arguments, 1);
+    return this.$$fireEventOnScope(eventName, additionalArgs);
+};
 
 module.exports.Scope = Scope;

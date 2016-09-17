@@ -390,11 +390,17 @@ Scope.prototype.$watchCollection = function (watchFn, listenerFn) {
 // Event system
 
 Scope.prototype.$on = function (evt, fn) {
+    var self = this;
     if(!this.$$listeners[evt]) {
         this.$$listeners[evt] = [fn];
     } else {
         this.$$listeners[evt].push(fn);
     }
+    return function () {
+        var index = self.$$listeners[evt].indexOf(fn);
+        if (index >= 0)
+            self.$$listeners[evt] = null;
+    };
 };
 
 Scope.prototype.$$fireEventOnScope = function (eventName, additionalArgs) {
@@ -402,9 +408,18 @@ Scope.prototype.$$fireEventOnScope = function (eventName, additionalArgs) {
     var listenerArgs = [event].concat(additionalArgs)
     var listeners = this.$$listeners[eventName] || [];
    
-    _.forEach(listeners, function (listener) {
-        listener.apply(null, listenerArgs);
-    });
+    var i = 0;
+    while (i < listeners.length) {
+        if (listeners[i] == null) {
+             listeners.splice(i, 1);
+        } else {
+            listeners[i].apply(null, listenerArgs);
+            i++;
+        }
+    }
+
+
+
     return event;
 };
 

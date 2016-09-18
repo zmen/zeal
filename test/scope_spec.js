@@ -1724,9 +1724,9 @@ describe("Scope", function () {
             });
 
             it("can be deregistered " + method, function () {
-                var listener  = jasmine.createSpy();
+                var listener = jasmine.createSpy();
                 var deregister = scope.$on('someEvent', listener);
-                
+
                 deregister();
 
                 scope[method]('someEvent');
@@ -1737,9 +1737,9 @@ describe("Scope", function () {
             it("does not skip the next listener when removed on " + method, function () {
                 var deregister;
 
-               var listener = function  () {
-                  deregister(); 
-               }; 
+                var listener = function () {
+                    deregister();
+                };
 
                 var nextListener = jasmine.createSpy();
 
@@ -1749,9 +1749,68 @@ describe("Scope", function () {
                 scope[method]('someEvent');
 
                 expect(nextListener).toHaveBeenCalled();
+            });
 
-            
-            }); 
+
+        });
+
+        it("propagates up the scope hierachy on $emit", function () {
+            var parentListener = jasmine.createSpy();
+            var scopeListener = jasmine.createSpy();
+
+            parent.$on('someEvent', parentListener);
+            scope.$on('someEvent', scopeListener);
+
+            scope.$emit('someEvent');
+
+            expect(scopeListener).toHaveBeenCalled();
+            expect(parentListener).toHaveBeenCalled();
+        });
+
+        it("propagates the same event up on $emit", function () {
+            var parentListener = jasmine.createSpy();
+            var scopeListener = jasmine.createSpy();
+
+            parent.$on('someEvent', parentListener);
+            scope.$on('someEvent', scopeListener);
+
+            scope.$emit('someEvent');
+
+            var scopeEvent = scopeListener.calls.mostRecent().args[0];
+            var parentEvent = parentListener.calls.mostRecent().args[0];
+
+            expect(scopeEvent).toBe(parentEvent);
+        });
+
+        it("propagates down the scope hierachy on $broadcast", function () {
+            var scopeListener = jasmine.createSpy();
+            var childListener = jasmine.createSpy();
+            var isolatedChildListener = jasmine.createSpy();
+
+            scope.$on('someEvent', scopeListener);
+            child.$on('someEvent', childListener);
+            isolatedChild.$on('someEvent', isolatedChildListener);
+
+            scope.$broadcast('someEvent');
+
+            expect(scopeListener).toHaveBeenCalled();
+            expect(childListener).toHaveBeenCalled();
+            expect(isolatedChildListener).toHaveBeenCalled();
+        });
+
+        it("propagates the same event down on $broadcast", function () {
+            var scopeListener = jasmine.createSpy();
+            var childListener = jasmine.createSpy();
+
+            scope.$on('someEvent', scopeListener);
+            child.$on('someEvent', childListener);
+
+            scope.$broadcast('someEvent');
+
+            var scopeEvent = scopeListener.calls.mostRecent().args[0];
+            var childEvent = childListener.calls.mostRecent().args[0];
+
+            expect(scopeEvent).toBe(childEvent);
         });
     });
 });

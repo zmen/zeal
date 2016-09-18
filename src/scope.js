@@ -391,7 +391,7 @@ Scope.prototype.$watchCollection = function (watchFn, listenerFn) {
 
 Scope.prototype.$on = function (evt, fn) {
     var self = this;
-    if(!this.$$listeners[evt]) {
+    if (!this.$$listeners[evt]) {
         this.$$listeners[evt] = [fn];
     } else {
         this.$$listeners[evt].push(fn);
@@ -403,34 +403,41 @@ Scope.prototype.$on = function (evt, fn) {
     };
 };
 
-Scope.prototype.$$fireEventOnScope = function (eventName, additionalArgs) {
-    var event = {name: eventName};
-    var listenerArgs = [event].concat(additionalArgs)
+Scope.prototype.$$fireEventOnScope = function (eventName, listenerArgs) {
     var listeners = this.$$listeners[eventName] || [];
-   
     var i = 0;
     while (i < listeners.length) {
-        if (listeners[i] == null) {
-             listeners.splice(i, 1);
+        if (listeners[i] === null) {
+            listeners.splice(i, 1);
         } else {
             listeners[i].apply(null, listenerArgs);
             i++;
         }
+
     }
-
-
-
-    return event;
 };
 
 Scope.prototype.$emit = function (eventName) {
+    var event = { name: eventName };
     var additionalArgs = Array.prototype.slice.call(arguments, 1);
-    return this.$$fireEventOnScope(eventName, additionalArgs);
+    var listenerArgs = [event].concat(additionalArgs);
+    var scope = this;
+    do {
+        scope.$$fireEventOnScope(eventName, listenerArgs);
+        scope = scope.$parent;
+    } while (scope);
+    return event;
 };
 
 Scope.prototype.$broadcast = function (eventName) {
-     var additionalArgs = Array.prototype.slice.call(arguments, 1);
-    return this.$$fireEventOnScope(eventName, additionalArgs);
+    var event = { name: eventName };
+    var additionalArgs = Array.prototype.slice.call(arguments, 1);
+    var listenerArgs = [event].concat(additionalArgs);
+    this.$$everyScope(function (scope) {
+        scope.$$fireEventOnScope(eventName, listenerArgs);
+        return true;
+    });
+    return event;
 };
 
 module.exports.Scope = Scope;

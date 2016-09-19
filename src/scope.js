@@ -418,25 +418,29 @@ Scope.prototype.$$fireEventOnScope = function (eventName, listenerArgs) {
 };
 
 Scope.prototype.$emit = function (eventName) {
-    var event = { name: eventName };
+    var event = { name: eventName, targetScope: this };
     var additionalArgs = Array.prototype.slice.call(arguments, 1);
     var listenerArgs = [event].concat(additionalArgs);
     var scope = this;
     do {
+        event.currentScope = scope;
         scope.$$fireEventOnScope(eventName, listenerArgs);
         scope = scope.$parent;
     } while (scope);
+    event.currentScope = null;
     return event;
 };
 
 Scope.prototype.$broadcast = function (eventName) {
-    var event = { name: eventName };
+    var event = { name: eventName, targetScope: this };
     var additionalArgs = Array.prototype.slice.call(arguments, 1);
     var listenerArgs = [event].concat(additionalArgs);
     this.$$everyScope(function (scope) {
+        event.currentScope = scope;
         scope.$$fireEventOnScope(eventName, listenerArgs);
         return true;
     });
+    event.currentScope = null;
     return event;
 };
 

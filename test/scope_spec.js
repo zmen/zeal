@@ -5,6 +5,7 @@
 /* global require: false */
 /* global beforeEach: false */
 /* global jasmine: false */
+/* global setTimeout: false */
 "use strict";
 
 var _ = require('lodash');
@@ -814,7 +815,7 @@ describe("Scope", function () {
 
             scope.$watchGroup([
                 function (scope) { return scope.aValue; },
-                function (scope) { return scope.anotherValue }
+                function (scope) { return scope.anotherValue; }
             ], function (newValues, oldValues, scope) {
                 gotNewValues = newValues;
                 gotOldValues = oldValues;
@@ -1762,7 +1763,19 @@ describe("Scope", function () {
                 expect(event.defaultPrevented).toBe(true);
             });
 
+            it("does not stop on exceptions on " + method, function () {
+                var listener1 = function (event) {
+                    throw 'listener1 throwing an exception';
+                };
+                var listener2 = jasmine.createSpy();
 
+                scope.$on('someEvent', listener1);
+                scope.$on('someEvent', listener2);
+
+                scope[method]('someEvent');
+
+                expect(listener2).toHaveBeenCalled();
+            });
         });
 
         it("propagates up the scope hierachy on $emit", function () {
@@ -1940,6 +1953,34 @@ describe("Scope", function () {
             scope.$emit('someEvent');
 
             expect(listener2).toHaveBeenCalled();
+        });
+
+        it("fires $destroy when destroyed", function () {
+            var listener = jasmine.createSpy();
+            scope.$on('$destroy', listener);
+
+            scope.$destroy();
+
+            expect(listener).toHaveBeenCalled();
+        });
+
+        it("fires $destroy on children destroyed", function () {
+            var listener = jasmine.createSpy();
+            child.$on('$destroy', listener);
+
+            scope.$destroy();
+
+            expect(listener).toHaveBeenCalled();
+        });
+
+        it("no longers calls listeners after destroyed", function () {
+            var listener = jasmine.createSpy();
+            scope.$on('someEvent', listener);
+
+            scope.$destroy();
+
+            scope.$emit('someEvent');
+            expect(listener).not.toHaveBeenCalled();
         });
 
     });

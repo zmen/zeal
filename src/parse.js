@@ -1,110 +1,48 @@
-/* jshint globalstrict: true */
-/* global require: false */
-/* global module: false */
+function lexer (expr) {
+    var tokens = [];
+    var numbers = "";
+    for (var i = 0; i < expr.length; i++) {
+        if (isNumber(expr[i])) {
+            numbers += expr[i];
+        } else {
+            throw 'Unexpected next character ' + expr[i];
+        }
+    }
+    tokens.push({
+        text: numbers,
+        value: Number(numbers)
+    });
+    return tokens;
+}
 
-"use strict";
+function astBuilder (tokens) {
 
-var _ = require("lodash");
-require("../src/angular");
+    return {
+        type: "Program",
+        body: {
+            type: "Literal",
+            value: tokens[0].value
+        }
+    };
+}
+
+function astCompiler (ast) {
+    switch (ast.type) {
+        case 'Program':
+        case 'Literal':
+            return ast.body.value;
+    }
+
+}
 
 function parse (expr) {
-    var lexer = new Lexer();
-    var parser = new Parser(lexer);
-    return parser.parse(expr);
-}
-
-/**
- * Lexer
- * Return tokens
- */
-function Lexer (text) {
-    this.text = text;
-    this.index = 0;
-    this.ch = undefined;
-    this.tokens = [];
-
-    while (this.index < this.text.length) {
-        this.ch = this.text.charAt(this.length);
-        if (this.isNumber(this.ch)) {
-            this.readNumber();
-        } else {
-            throw 'Unexpected next character: ' + this.ch;
-        }
-    }
-    
-    return this.tokens;
-}
-
-Lexer.prototype.lex = function (text) {
-
-};
-
-Lexer.prototype.isNumber = function (ch) {
-    return '0' <= ch && ch <= 9;
-}
-
-Lexer.prototype.readNumber = function () {
-    var number = '';
-    while (this.index < this.text.length) {
-        var ch = this.text.charAt(this.index);
-        if (this.isNumber(ch)) {
-            number += ch;
-        } else {
-            break;
-        }
-        this.index++;
-    }
-    this.tokens.push({
-        text: number,
-        value: Number(number)
-    });
-}
-
-/**
- * AST
- * Build AST tree
- */
-function AST (lexer) {
-    this.lexer = lexer;
-}
-AST.Program = 'Program';
-AST.Literal = 'Literal';
-
-AST.prototype.ast = function (text) {
-    this.tokens = this.lexer.lex(text);
-    return this.program();
-};
-
-AST.prototype.program = function () {
-    return { 
-        type: AST.Program,
-        body: this.constant()
-     };
-};
-
-AST.prototype.constant = function () {
-    return {
-        type: AST.Literal,
-        value: this.tokens[0].value
+    return  function () {
+        return astCompiler(astBuilder(lexer(expr)));
     }
 }
 
-function ASTCompiler (astBuilder) {
-    this.astBuilder = astBuilder;
+function isNumber (ch) {
+    return '0' <= ch && ch <= '9';
 }
-
-ASTCompiler.prototype.compile = function (text) {
-    var ast = this.astBuilder.ast(text);
-};
-
-function Parser (lexer) {
-    this.lexer = lexer;
-    this.ast = new AST(this.lexer);
-    this.ASTCompiler = new ASTCompiler(this.ast);
-}
-
-Parser.prototype.parse = function (text) {
-    return this.astCompiler.compile(text);
-};
 
 module.exports.parse = parse;

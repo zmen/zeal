@@ -2,7 +2,7 @@ function lexer (expr) {
     var tokens = [];
     var numbers = "";
     for (var i = 0; i < expr.length; i++) {
-        if (isNumber(expr[i])) {
+        if (isNumber(expr[i]) || (expr[i] == '.' && isNumber(expr[i+1]))) {
             numbers += expr[i];
         } else {
             throw 'Unexpected next character ' + expr[i];

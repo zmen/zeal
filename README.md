@@ -1,2 +1,3 @@
 # zeal
-angularJS1.x的实践项目
+
+Dive into Angular1.x
